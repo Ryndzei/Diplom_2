@@ -71,9 +71,17 @@ class TestCreateUser:
         - Код ответа 403.
         - Поле 'message': 'Email, password and name are required fields'.
         ''')
-    def test_create_user_with_one_required_field_missing_error(self):
-        with allure.step('Отправить POST запрос на /api/auth/register c неполным payload'):
-            response_register = requests.post(URL.REGISTER_USER_URL, json=TestData.user_payload_with_no_required_field)
+    def test_create_user_with_email_required_field_missing_error(self):
+        with allure.step('Отправить POST запрос на /api/auth/register c неполным payload (без email)'):
+            response_register = requests.post(URL.REGISTER_USER_URL, json=TestData.user_payload_with_no_required_field_email)
+
+        with allure.step('Проверить, что код ответа == 403 и сообщение Email, password and name are required fields'):
+            assert response_register.status_code == 403
+            assert response_register.json()['message'] == 'Email, password and name are required fields'
+    
+    def test_create_user_with_password_required_field_missing_error(self):
+        with allure.step('Отправить POST запрос на /api/auth/register c неполным payload (без password)'):
+            response_register = requests.post(URL.REGISTER_USER_URL, json=TestData.user_payload_with_no_required_field_password)
 
         with allure.step('Проверить, что код ответа == 403 и сообщение Email, password and name are required fields'):
             assert response_register.status_code == 403
