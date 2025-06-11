@@ -1,4 +1,5 @@
 import allure
+import pytest
 import requests
 from urls import URL
 from random_data import generate_user_register_body
@@ -34,55 +35,47 @@ class TestCreateUser:
 
     @allure.story('Создание пользователя, который уже зарегистрирован')
     @allure.title('Ошибка при повторной регистрации того же пользователя')
-    @allure.description('''
+    @allure.description(f'''
         Шаги:
         1. Сгенерировать payload (email, password, name).
         2. Зарегистрировать пользователя — ожидаем success = true, код 200.
         3. Попытаться снова зарегистрировать того же пользователя — ожидаем код 403.
         Ожидаем:
         - Код ответа 403.
-        - Поле 'message': 'User already exists'.
+        - Поле 'message': {TestData.user_already_exists_message}.
         ''')
-    def test_create_already_existed_user_error(self, user_cleanup):
-        with allure.step('Сгенерировать payload для нового пользователя'):
-            payload = generate_user_register_body()
+    def test_create_already_existed_user_error(self, user_create_and_cleanup):
+        with allure.step('Использовать уже зарегистрированный payload для нового пользователя'):
+            payload = user_create_and_cleanup
 
-        with allure.step('Передать фикстуре данные для очистки'):
-            user_cleanup.update(payload)
-
-        with allure.step('Первый запрос на регистрацию (должен пройти успешно)'):
-            response_first_register = requests.post(URL.REGISTER_USER_URL, json=payload)
-            assert response_first_register.status_code == 200 and response_first_register.json()['success'] == True
-
-        with allure.step('Второй запрос на регистрацию тем же payload (ожидаем ошибку)'):
+        with allure.step('Запрос на регистрацию тем же payload (ожидаем ошибку)'):
             response_second_register = requests.post(URL.REGISTER_USER_URL, json=payload)
 
-        with allure.step('Проверить, что код ответа == 403 и сообщение User already exists'):
+        with allure.step(f'Проверить, что код ответа == 403 и сообщение {TestData.user_already_exists_message}'):
             assert response_second_register.status_code == 403
-            assert response_second_register.json()['message'] == 'User already exists'
+            assert response_second_register.json()['message'] == TestData.user_already_exists_message
 
     @allure.story('Создание пользователя без одного из обязательных полей')
     @allure.title('Ошибка при отсутствии обязательного поля')
-    @allure.description('''
+    @allure.description(f'''
         Шаги:
         1. Сформировать payload без поля 'email' (только 'password' и 'name').
         2. Отправить POST запрос на /api/auth/register.
         Ожидаем:
         - Код ответа 403.
-        - Поле 'message': 'Email, password and name are required fields'.
+        - Поле 'message': '{TestData.fields_required_message}'.
         ''')
-    def test_create_user_with_email_required_field_missing_error(self):
-        with allure.step('Отправить POST запрос на /api/auth/register c неполным payload (без email)'):
-            response_register = requests.post(URL.REGISTER_USER_URL, json=TestData.user_payload_with_no_required_field_email)
+    @pytest.mark.parametrize(
+        "payload, missing_field",[
+        (TestData.user_payload_with_no_required_field_email, "email"),
+        (TestData.user_payload_with_no_required_field_password, "password")
+        ],
+        ids=["missing email", "missing password"]
+    )
+    def test_create_user_with_missing_required_field_error(self, payload, missing_field):
+        with allure.step(f'Отправить POST запрос на /api/auth/register c неполным payload (без {missing_field})'):
+            response_register = requests.post(URL.REGISTER_USER_URL, json=payload)
 
-        with allure.step('Проверить, что код ответа == 403 и сообщение Email, password and name are required fields'):
+        with allure.step(f'Проверить, что код ответа == 403 и сообщение {TestData.fields_required_message}'):
             assert response_register.status_code == 403
-            assert response_register.json()['message'] == 'Email, password and name are required fields'
-    
-    def test_create_user_with_password_required_field_missing_error(self):
-        with allure.step('Отправить POST запрос на /api/auth/register c неполным payload (без password)'):
-            response_register = requests.post(URL.REGISTER_USER_URL, json=TestData.user_payload_with_no_required_field_password)
-
-        with allure.step('Проверить, что код ответа == 403 и сообщение Email, password and name are required fields'):
-            assert response_register.status_code == 403
-            assert response_register.json()['message'] == 'Email, password and name are required fields'
+            assert response_register.json()['message'] == TestData.fields_required_message

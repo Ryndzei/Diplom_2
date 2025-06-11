@@ -1,5 +1,6 @@
 import allure
 import requests
+from data import TestData
 from urls import URL
 from random_data import generate_user_register_body
 
@@ -30,13 +31,13 @@ class TestLoginUser:
 
     @allure.story('Логин с неверными данными')
     @allure.title('Ошибка при неверном email или пароле')
-    @allure.description('''
+    @allure.description(f'''
         Шаги:
         1. Сгенерировать случайный payload, не зарегистрированный в системе.
         2. Отправить POST запрос на /api/auth/login.
         Ожидаем:
         - Код ответа 401.
-        - Поле 'message': 'email or password are incorrect'.
+        - Поле 'message': {TestData.email_or_password_are_incorrect}.
         ''')
     def test_login_with_wrong_user_data_error(self):
         with allure.step('Сгенерировать несуществующие email и password'):
@@ -45,6 +46,6 @@ class TestLoginUser:
         with allure.step('Отправить POST запрос на логин с неверными данными'):
             response_login = requests.post(URL.LOGIN_USER_URL, json=payload)
 
-        with allure.step('Проверить код ответа 401 и сообщение об ошибке'):
+        with allure.step(f'Проверить код ответа 401 и сообщение об ошибке {TestData.email_or_password_are_incorrect}'):
             assert response_login.status_code == 401
-            assert response_login.json()['message'] == 'email or password are incorrect'
+            assert response_login.json()['message'] == TestData.email_or_password_are_incorrect

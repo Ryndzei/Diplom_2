@@ -40,17 +40,17 @@ class TestGetUserOrders:
 
     @allure.story('Получение заказов без авторизации')
     @allure.title('Ошибка при попытке получить заказы без токена')
-    @allure.description('''
+    @allure.description(f'''
         Шаги:
         1. Отправить GET запрос на /api/orders без заголовка Authorization.
         Ожидаем:
         - Код ответа 401.
-        - Поле 'message': 'You should be authorised'.
+        - Поле 'message': {TestData.you_should_be_authorised_message}.
         ''')
     def test_get_user_orders_when_not_logged_in_error(self):
         with allure.step("Отправить GET запрос на получение заказов без заголовка Authorization"):
             response_get_orders = requests.get(URL.GET_USER_ORDERS_URL)
 
-        with allure.step('Проверить, что код ответа == 401 и сообщение You should be authorised'):
+        with allure.step(f'Проверить, что код ответа == 401 и сообщение {TestData.you_should_be_authorised_message}'):
             assert response_get_orders.status_code == 401
-            assert response_get_orders.json()['message'] == 'You should be authorised'
+            assert response_get_orders.json()['message'] == TestData.you_should_be_authorised_message
